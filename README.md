@@ -1,2 +1,1 @@
-#Project
-#Java_JDBC 
+# JAVATUTORIAL
