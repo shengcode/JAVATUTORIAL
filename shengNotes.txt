@@ -1,0 +1,337 @@
+
+# GET THE history Experience of some employee_id
+(SELECT E.employee_id, Round(MONTHS_BETWEEN(end_date,start_date)/12) Experience FROM Employees E, Job_history J WHERE E.employee_id=J.employee_id) His
+
+#Left join with this 
+(SELECT E.employee_id employee_id, His.Experience His_experience
+FROM Employees E, (SELECT E.employee_id, Round(MONTHS_BETWEEN(end_date,start_date)/12) Experience FROM Employees E, Job_history J WHERE E.employee_id=J.employee_id) His
+WHERE E.employee_id=His.employee_id(+))His_null;
+
+SELECT employee_id, SUM(NVL2(His_experience,His_experience,0)) as His_nonull_Experience
+FROM (SELECT E.employee_id employee_id, His.Experience His_experience
+FROM Employees E, (SELECT E.employee_id, Round(MONTHS_BETWEEN(end_date,start_date)/12) Experience FROM Employees E, Job_history J WHERE E.employee_id=J.employee_id) His
+WHERE E.employee_id=His.employee_id(+))His_null
+GROUP BY employee_id;
+
+# merge with employees table 
+SELECT New_E.employee_id, New_E.Experience+Final_his.his_nonull_Experience
+FROM (SELECT employee_id, Round(MONTHS_BETWEEN(sysdate,hire_date)/12) Experience FROM employees) New_E,
+	(SELECT employee_id, SUM(NVL2(His_experience,His_experience,0)) as His_nonull_Experience
+	FROM (SELECT E.employee_id employee_id, His.Experience His_experience
+	FROM Employees E, (SELECT E.employee_id, Round(MONTHS_BETWEEN(end_date,start_date)/12) Experience FROM Employees E, Job_history J WHERE E.employee_id=J.employee_id) His
+	WHERE E.employee_id=His.employee_id(+))His_null
+	GROUP BY employee_id)Final_his
+WHERE New_E.employee_id=Final_his.employee_id
+ORDER BY New_E.employee_id;
+	
+
+
+
+SELECT E.employee_id,  Round(MONTHS_BETWEEN(sysdate,E.start_date)/12)+SUB.Experience Experience
+FROM Employees E, (SELECT HIS.employee_id as employee_id, SUM(NVL2(Experience,Experience,0)) as Experience
+		    FROM (SELECT E.employee_id, Round(MONTHS_BETWEEN(end_date,start_date)/12) Experience FROM Employees E, Job_history J WHERE E.employee_id=J.employee_id) SUB
+WHERE E.employee_id=SUB.employee_id;
+
+
+
+SELECT HIS.employee_id, SUM( NVL2(Experience,Experience,0))
+		FROM (SELECT E.employee_id, Round(MONTHS_BETWEEN(end_date,start_date)/12) Experience
+		FROM Employees E, Job_history J
+		WHERE E.employee_id=J.employee_id(+)) HIS
+		GROUP BY(HIS.employee_id)
+
+
+SELECT department_id,job_id,AVG(salary) 
+FROM Employees
+GROUP BY department_id, job_id;
+
+AVG(E.salary)
+FROM Departments D,Employees E
+WHERE E.department_id= D.department_id
+GROUP BY D.department_name;
+
+
+
+
+
+SELECT first_name, salary, commission_pct,nvl(commission_pct,0)
+FROM Employees
+WHERE Commission_pct IS NULL;
+
+
+SELECT first_name, salary, commission_pct,nvl(commission_pct,0)
+as CCC
+FROM Employees
+WHERE Commission_pct IS NULL;
+
+SELECT first_name as A, salary as B,commission_pct as C ,nvl(commission_pct,0)
+as D
+FROM Employees
+WHERE Commission_pct IS NULL;
+
+SELECT Department_id, Department_name
+FROM Departments
+ORDER BY department_name;
+
+SELECT Department_id, Department_name
+FROM Departments
+ORDER BY department_name DESC;
+
+SELECT Department_id, Department_name
+FROM Departments
+ORDER BY department_name DESC, department_id;
+
+COUNTRIES                      TABLE
+DEPARTMENTS                    TABLE
+EMPLOYEES                      TABLE
+EMP_DETAILS_VIEW               VIEW
+JOBS                           TABLE
+JOB_HISTORY                    TABLE
+LOCATIONS                      TABLE
+REGIONS                        TABLE
+
+---CREATE OR REPLACE FUNCTION FB RETURN VARCHAR2
+----IS
+---BEGIN 
+----RETURN 'ALEX';
+---END;
+
+SHOW ERRORS;
+
+----EXECURE A FUNCTION
+
+SELECT FB() FROM Dual;
+
+---EXAMPLE 2
+---types of parameters : IN, OUT, IN OUT
+
+CREATE OR REPLACE FUNCTION FB (Ename IN VARCHAR)
+RETURN VARCHAR2
+IS
+BEGIN 
+RETURN Ename;
+END;
+
+SELECT FB('Alice') FROM Dual;
+
+SELECT FB(First_name||' '||Last_name) FROM Employees;
+
+---Third Example
+--Execute a sql statement within a function
+
+CREATE OR REPLACE FUNCTION FB_example3 (EmpId NUMBER)
+RETURN VARCHAR2
+IS
+  Full_Name varchar2(30);
+BEGIN 
+SELECT First_name||' '||Last_name INTO Full_Name
+FROM EMPLOYEES
+WHERE Employee_id =EmpId;
+RETURN Full_Name;
+END;
+SHOW ERROWS;
+SELECT FB_example3(101) From Dual;
+
+CREATE OR REPLACE FUNCTION FB_example4 (DepId NUMBER)
+RETURN VARCHAR2
+IS
+  Depart_Name varchar2(30);
+BEGIN 
+SELECT Department_name INTO Depart_Name
+FROM Departments
+WHERE Department_id =DepId;
+RETURN Depart_Name;
+END;
+SHOW ERROWS;
+SELECT FB_example4(30) From Dual;
+
+CREATE OR REPLACE PROCEDURE sp_test1 (EMPID NUMBER)
+IS 
+Emp_Name varchar2(30);
+Dept_name varchar2(30);
+BEGIN 
+--Option 1
+SELECT FB_example3(EMPID) INTO Emp_Name From Dual;
+---option 2 callign function
+Dept_name := FB_example4(EMPID);
+DBMS_OUTPUT.PUT_LINE(Emp_Name||' '||Dept_name);
+
+END sp_test1;
+
+SHOW ERRORS;
+EXECUTE sp_test1(100);
+SET SERVEROUTPUT ON;
+
+
+--SELECT * FROM Departments WHERE department_id=100;
+
+CREATE OR REPLACE PROCEDURE sp_test2 (EMPID NUMBER)
+IS
+Emp_Name Employees.Last_name%TYPE;
+Dept_Name Departments.department_name%TYPE;
+BEGIN
+--Option 1
+SELECT FB_example3(EMPID) INTO Emp_Name From Dual;
+---option 2 callign function
+Dept_name := FB_example4(EMPID);
+DBMS_OUTPUT.PUT_LINE(Emp_Name||' '||Dept_name);
+
+END sp_test2;
+
+EXECUTE sp_test2(100);
+SET SERVEROUTPUT ON;
+
+DECLARE
+  Ename Employees.First_Name%TYPE;
+  Sal Employees.Salary%TYPE;
+  JobId Employees.Job_id%TYPE;
+  DeptId EMPLOYEES.DEPARTMENT_ID%TYPE;
+BEGIN
+  SELECT First_Name || ' ' Last_Name, salary, job_id, department_id 
+  INTO Ename,Sal,JobId,DeptId
+  FROM Employees
+  WHERE Employee_id=103;
+  DBMS_OUTPUT.PUT_LINE('Employee name: '|| Ename );
+  DBMS_OUTPUT.PUT_LINE('Salary: '|| Sal );
+  DBMS_OUTPUT.PUT_LINE('Job Id: '|| JobId );
+  DBMS_OUTPUT.PUT_LINE('DeptId: '|| DeptId );
+END;
+
+-----USING CURSORS---------
+---USED FOR PROCESSING THE MANY TERMS RETURNED BY A SQL QUERY
+---IN 4 STEPS
+--1) Declare the cursor in the declare section , allws
+---2) Open cursor in the begin section 
+----3) Fetch the data from the cursor 
+---4) clost the cursor ---done in the begin section 
+DECLARE
+  CURSOR CL_emps IS
+  SELECT First_Name || ' ' Last_Name, salary, job_id, department_id 
+  --INTO Ename,Sal,JobId,DeptId
+  FROM Employees
+  WHERE Department_id=50;
+  Ename Employees.First_Name%TYPE;
+  Sal Employees.Salary%TYPE;
+  JobId Employees.Job_id%TYPE;
+  DeptId EMPLOYEES.DEPARTMENT_ID%TYPE;
+BEGIN
+ --- Open the cursor, the query is executed by the oracle engine, the cursor
+ ---pointes to the first record of the data set 
+  ---Syntax: OPEN <<CURSOR_NAME>>;
+  OPEN CL_emps;
+  ---Fetch/extract the data returned from the cursor
+  ---Syntax: FETCH <<CURSOR_NAME>> INTO <<bind variables>>
+  ---One call of Fetch only get one record 
+  
+  ---Loop before Fetching
+  Loop 
+  FETCH CL_emps INTO Ename, Sal, JobId, DeptId;
+  EXIT WHEN (CL_emps%NOTFOUND);
+  DBMS_OUTPUT.PUT_LINE('Employee name: '|| Ename );
+  DBMS_OUTPUT.PUT_LINE('Salary: '|| Sal );
+  DBMS_OUTPUT.PUT_LINE('Job Id: '|| JobId );
+  DBMS_OUTPUT.PUT_LINE('DeptId: '|| DeptId );
+  End Loop;
+  CLOSE CL_emps;
+END;
+
+
+
+DECLARE 
+  dept_name Departments.Department_name%TYPE;
+  reg_name Regions.region_name%TYPE;
+  CURSOR CL_p1 IS
+    SELECT D.department_name, R.region_name
+    FROM Departments D, Locations L, Countries C, Regions R
+    WHERE D.location_id =L.location_id AND L.country_id=C.country_id 
+    And C.country_id =R.region_id AND D.department_id=90;
+BEGIN
+  OPEN CL_p1;
+  Loop
+  FETCH CL_p1 INTO dept_name, reg_name;
+  EXIT WHEN (CL_p1%NOTFOUND);
+  DBMS_OUTPUT.PUT_LINE('Department Name is '|| dept_name);
+  DBMS_OUTPUT.PUT_LINE('Region Name is '|| reg_name);
+  End Loop;
+  CLOSE CL_p1;
+END;
+SHOW ERRORS;
+
+#######################FOR LOOP#############
+DECLARE
+	CURSOR Cl_Emp IS
+	SELECT First_name, Salary, Job_Id, Department_id
+	FROM Employees
+	WHERE Department_id=50;
+BEGIN 
+	DBMS_OUTPUT.PUT_LINE(RPAD('Employee NAME',20)||(RPAD('Job ID',20)));
+	FOR cVar1 in Cl_Emp
+	Loop
+	DBMS_OUTPUT.PUT_LINE(RPAD(cVar1.First_name,20)||RPAD(cVar1.JOB_ID,20));
+	End Loop;
+END;
+=====pass arguments to cursor --------
+
+DECLARE
+	CURSOR Cl_Emp(DeptId NUMBER) IS
+	SELECT First_name, Salary, Job_Id, Department_id
+	FROM Employees
+	WHERE Department_id=DeptId;
+BEGIN 
+	DBMS_OUTPUT.PUT_LINE(RPAD('Employee NAME',20)||(RPAD('Job ID',20)));
+	FOR cVar1 in Cl_Emp(50)
+	Loop
+	DBMS_OUTPUT.PUT_LINE(RPAD(cVar1.First_name,20)||RPAD(cVar1.JOB_ID,20));
+	End Loop;
+END;
+
+
+
+
+
+
+
+
+DECLARE
+  CURSOR CL_emps IS
+  SELECT D.department_name, R.region_name
+  FROM Departments D, Locations L, Regions R, Countries C
+  WHERE D.Department_id=90 AND D.location_id=L.location_id AND L.country_id =C.country_id AND C.Region_id=R.Region_id;  
+  dept_name Departments.department_name%TYPE;
+  reg_name Regions.region_name%TYPE;
+BEGIN
+  OPEN CL_emps;
+  Loop
+  FETCH CL_emps INTO dept_name, reg_name;
+  EXIT WHEN (CL_emps%NOTFOUND);
+  DBMS_OUTPUT.PUT_LINE('Employee name: '|| dept_name );
+  DBMS_OUTPUT.PUT_LINE('Salary: '|| reg_name);  
+  End Loop;
+  CLOSE CL_emps;
+END;
+----FOR LOOP
+DECLARE
+	CURSOR Cl_Emp IS
+	SELECT First_name, Salary, Job_Id, Department_id
+	FROM Employees
+	WHERE Department_id=50;
+BEGIN 
+	DBMS_OUTPUT.PUT_LINE(RPAD('Employee NAME',20)||(RPAD('Job ID',20)));
+	FOR cVar1 in Cl_Emp
+	Loop
+	DBMS_OUTPUT.PUT_LINE(RPAD(cVar1.First_name,20)||RPAD(cVar1.JOB_ID,20));
+	End Loop;
+END;
+
+DECLARE
+	CURSOR Cl_Emp(DeptId NUMBER) IS
+	SELECT First_name, Salary, Job_Id, Department_id
+	FROM Employees
+	WHERE Department_id=DeptId;
+BEGIN 
+	DBMS_OUTPUT.PUT_LINE(RPAD('Employee NAME',20)||(RPAD('Job ID',20)));
+	FOR cVar1 in Cl_Emp(50)
+	Loop
+	DBMS_OUTPUT.PUT_LINE(RPAD(cVar1.First_name,20)||RPAD(cVar1.JOB_ID,20));
+	End Loop;
+END;
